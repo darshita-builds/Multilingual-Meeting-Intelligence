@@ -41,8 +41,8 @@ macOS/Linux differences are noted inline.
 ### Step 1 — set up (once)
 
 ```powershell
-git clone https://github.com/ShriyaP1966/multilingual-meeting-intelligence.git
-cd multilingual-meeting-intelligence
+git clone https://github.com/darshita-builds/Multilingual-Meeting-Intelligence
+cd Multilingual-Meeting-Intelligence
 
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1         # macOS/Linux: source .venv/bin/activate
