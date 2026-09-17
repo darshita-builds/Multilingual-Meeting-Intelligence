@@ -1,0 +1,257 @@
+{
+  "version": 1,
+  "provenance": "MANUALLY ANNOTATED by Person A (single annotator) against the SYNTHETIC transcripts in fixtures/meetings/. No inter-annotator agreement has been computed -- see docs/ml-evaluation.md for why, and what would be needed to close that gap. Annotated against the RAW (pre-PII-scrubbing) transcript text, matching what run_evaluation.py feeds the segmenter/extractor directly.",
+  "annotation_protocol": "Same protocol as fixtures/meetings/DATASET.md: a DECISION states a settled outcome (a commitment, not a proposal or hedge); an ACTION assigns work to be done, with owner/deadline recorded only when the sentence states them unambiguously as a concrete name or calendar reference -- a vague trigger like 'before the cutover' is deliberately left as owner/deadline=null even though a sentence mentions it, because it is not a date. Adversarial sentences (fixture 04) are never annotated as content, matching the platform's own injection-defence stance.",
+  "scenarios": {
+    "01_clean_english_standup": {
+      "language": "en",
+      "decisions": [
+        {
+          "text": "We have decided to postpone the Hindi localisation release until the next quarter."
+        },
+        {
+          "text": "It was agreed that we will go with the managed Postgres option."
+        },
+        {
+          "text": "The decision is final, we are going with the two week sprint cadence."
+        }
+      ],
+      "actions": [
+        {
+          "text": "Priya will send the updated API contract to the vendor by Friday.",
+          "owner_name": "Priya",
+          "deadline": "Friday"
+        },
+        {
+          "text": "Rahul needs to check the staging database backups before the cutover.",
+          "owner_name": "Rahul",
+          "deadline": null
+        },
+        {
+          "text": "Aarti will prepare the monthly compliance report by 2026-10-05.",
+          "owner_name": "Aarti",
+          "deadline": "2026-10-05"
+        }
+      ]
+    },
+    "02_code_mixed_hindi_english": {
+      "language": "hi",
+      "decisions": [
+        {
+          "text": "हमने तय किया है ki sprint cadence two weeks rahegi."
+        },
+        {
+          "text": "It was agreed that we will go with the managed Postgres option."
+        }
+      ],
+      "actions": [
+        {
+          "text": "Priya will send the updated API contract to the vendor by Friday.",
+          "owner_name": "Priya",
+          "deadline": "Friday"
+        },
+        {
+          "text": "Rahul needs to check the staging backups before the cutover.",
+          "owner_name": "Rahul",
+          "deadline": null
+        },
+        {
+          "text": "Aarti ko monthly compliance report prepare karna hai by 2026-10-05.",
+          "owner_name": "Aarti",
+          "deadline": "2026-10-05"
+        }
+      ]
+    },
+    "03_pii_heavy_onboarding": {
+      "language": "en",
+      "decisions": [
+        {
+          "text": "We have decided to proceed with the three year contract."
+        }
+      ],
+      "actions": [
+        {
+          "text": "Send the signed agreement to arjun.mehta@example.com and copy the finance team.",
+          "owner_name": null,
+          "deadline": null
+        },
+        {
+          "text": "Rahul will update the vendor master record by Friday.",
+          "owner_name": "Rahul",
+          "deadline": "Friday"
+        }
+      ]
+    },
+    "04_prompt_injection_planning": {
+      "language": "en",
+      "decisions": [
+        {
+          "text": "We have decided to move the launch to the second week of November."
+        },
+        {
+          "text": "It was agreed that the budget stays unchanged."
+        }
+      ],
+      "actions": [
+        {
+          "text": "Priya will send the revised timeline by Wednesday.",
+          "owner_name": "Priya",
+          "deadline": "Wednesday"
+        },
+        {
+          "text": "Rahul needs to update the risk register before the board review.",
+          "owner_name": "Rahul",
+          "deadline": null
+        }
+      ]
+    },
+    "05_no_decisions_social": {
+      "language": "en",
+      "decisions": [],
+      "actions": []
+    },
+    "06_hedged_ambiguous": {
+      "language": "en",
+      "decisions": [
+        {
+          "text": "We have decided to revisit this in two weeks."
+        }
+      ],
+      "actions": [
+        {
+          "text": "Perhaps Priya should look at the benchmarks if she has time.",
+          "owner_name": "Priya",
+          "deadline": null
+        },
+        {
+          "text": "Rahul will run a quick spike before then.",
+          "owner_name": "Rahul",
+          "deadline": null
+        }
+      ]
+    },
+    "07_disfluent_noisy": {
+      "language": "en",
+      "decisions": [
+        {
+          "text": "So basically we, um, we have decided to, uh, ship the hotfix today."
+        }
+      ],
+      "actions": [
+        {
+          "text": "Priya will, uh, will send the release notes by, um, by end of day.",
+          "owner_name": "Priya",
+          "deadline": null
+        },
+        {
+          "text": "Sorry, I mean, Rahul needs to check the rollback plan first.",
+          "owner_name": "Rahul",
+          "deadline": null
+        }
+      ]
+    },
+    "08_long_quarterly_review": {
+      "language": "en",
+      "decisions": [
+        {
+          "text": "We have decided to continue funding workstream 1 through the next quarter."
+        },
+        {
+          "text": "We have decided to continue funding workstream 2 through the next quarter."
+        },
+        {
+          "text": "We have decided to continue funding workstream 3 through the next quarter."
+        },
+        {
+          "text": "We have decided to continue funding workstream 4 through the next quarter."
+        },
+        {
+          "text": "We have decided to continue funding workstream 5 through the next quarter."
+        },
+        {
+          "text": "We have decided to continue funding workstream 6 through the next quarter."
+        },
+        {
+          "text": "We have decided to continue funding workstream 7 through the next quarter."
+        },
+        {
+          "text": "We have decided to continue funding workstream 8 through the next quarter."
+        },
+        {
+          "text": "We have decided to continue funding workstream 9 through the next quarter."
+        },
+        {
+          "text": "We have decided to continue funding workstream 10 through the next quarter."
+        },
+        {
+          "text": "We have decided to continue funding workstream 11 through the next quarter."
+        },
+        {
+          "text": "We have decided to continue funding workstream 12 through the next quarter."
+        }
+      ],
+      "actions": [
+        {
+          "text": "Owner Rahul will send the detailed report by Friday.",
+          "owner_name": "Rahul",
+          "deadline": "Friday"
+        },
+        {
+          "text": "Owner Aarti will send the detailed report by Friday.",
+          "owner_name": "Aarti",
+          "deadline": "Friday"
+        },
+        {
+          "text": "Owner Vikram will send the detailed report by Friday.",
+          "owner_name": "Vikram",
+          "deadline": "Friday"
+        },
+        {
+          "text": "Owner Priya will send the detailed report by Friday.",
+          "owner_name": "Priya",
+          "deadline": "Friday"
+        },
+        {
+          "text": "Owner Rahul will send the detailed report by Friday.",
+          "owner_name": "Rahul",
+          "deadline": "Friday"
+        },
+        {
+          "text": "Owner Aarti will send the detailed report by Friday.",
+          "owner_name": "Aarti",
+          "deadline": "Friday"
+        },
+        {
+          "text": "Owner Vikram will send the detailed report by Friday.",
+          "owner_name": "Vikram",
+          "deadline": "Friday"
+        },
+        {
+          "text": "Owner Priya will send the detailed report by Friday.",
+          "owner_name": "Priya",
+          "deadline": "Friday"
+        },
+        {
+          "text": "Owner Rahul will send the detailed report by Friday.",
+          "owner_name": "Rahul",
+          "deadline": "Friday"
+        },
+        {
+          "text": "Owner Aarti will send the detailed report by Friday.",
+          "owner_name": "Aarti",
+          "deadline": "Friday"
+        },
+        {
+          "text": "Owner Vikram will send the detailed report by Friday.",
+          "owner_name": "Vikram",
+          "deadline": "Friday"
+        },
+        {
+          "text": "Owner Priya will send the detailed report by Friday.",
+          "owner_name": "Priya",
+          "deadline": "Friday"
+        }
+      ]
+    }
+  }
+}

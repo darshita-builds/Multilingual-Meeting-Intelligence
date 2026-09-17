@@ -1,0 +1,42 @@
+# Optional. The base platform (requirements.txt) never imports any of this --
+# `backend/app/ml/registry.py` only reaches for these packages when a
+# MOM_*_BACKEND env var selects a real model instead of `baseline`. Install
+# this file when you want to run WhisperSTT, PyannoteDiarizer,
+# EmbeddingAgendaSegmenter or TransformerExtractor for real, or to run
+# `python -m backend.app.ml.evaluation.run_evaluation` against them.
+#
+#   pip install -r requirements-ml.txt
+#
+# CPU is the default and what every model here is configured for out of the
+# box (see MOM_WHISPER_DEVICE etc. in .env.example) -- nothing requires a GPU.
+# If you do have a CUDA GPU, install torch for your CUDA version FIRST
+# (https://pytorch.org/get-started/locally/), then this file, so pip does not
+# pull the CPU wheel.
+#
+# `sentence-transformers` was smoke-tested against this file's pin on Python
+# 3.11-3.14 while building this project (real model download + encode).
+# `faster-whisper`, `pyannote.audio` and `mlflow` are pinned to versions
+# current at time of writing but were not independently verified here --
+# `pyannote.audio` in particular pulls a heavy dependency chain
+# (torch, torchaudio, pytorch-lightning, speechbrain, asteroid-filterbanks)
+# that can lag behind the newest Python releases. Refresh with
+# `pip-audit -r requirements-ml.txt` and re-verify against a real model
+# before relying on it, the same discipline `requirements.txt` documents.
+
+# --- Speech-to-text (whisper_stt.py) ---
+faster-whisper==1.1.1
+
+# --- Speaker diarization (pyannote_diarizer.py) ---
+# Gated on Hugging Face: accept the licence for the model in MOM_PYANNOTE_MODEL
+# and set HF_TOKEN before use. See pyannote_diarizer.py's module docstring.
+pyannote.audio==3.3.2
+
+# --- Agenda segmentation + decision/action extraction ---
+# (embedding_segmenter.py, transformer_extractor.py -- share one model family
+# via sentence_embeddings.py)
+sentence-transformers==6.0.1
+
+# --- Experiment tracking (mlflow_tracking.py) ---
+# Entirely optional even with this file installed -- run_evaluation.py works
+# without it and just skips tracking (see mlflow_tracking.py).
+mlflow==2.19.0

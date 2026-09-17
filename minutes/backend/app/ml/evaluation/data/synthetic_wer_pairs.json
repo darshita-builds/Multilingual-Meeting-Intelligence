@@ -1,0 +1,41 @@
+{
+  "provenance": "SYNTHETIC. Hand-written (reference, simulated-hypothesis) pairs, not real ASR output. fixtures/meetings/ has no real speech to transcribe -- the .wav files are a 2-second placeholder tone, see DATASET.md's 'Known limitations'. Each hypothesis simulates one documented ASR error pattern (see each pair's error_type) so run_evaluation.py can demonstrate that the WER implementation computes correctly. These numbers are NOT a measurement of WhisperSTT's real-world accuracy and must never be reported as one -- see docs/ml-evaluation.md.",
+  "pairs": [
+    {
+      "id": "exact_match",
+      "error_type": "none (sanity check: identical strings must score WER 0)",
+      "reference": "we have decided to proceed with the plan",
+      "hypothesis": "we have decided to proceed with the plan"
+    },
+    {
+      "id": "substitution_near_homophone",
+      "error_type": "substitution (near-homophone: decision/division)",
+      "reference": "the decision is final we are going with the two week sprint cadence",
+      "hypothesis": "the division is final we are going with the two week sprint cadence"
+    },
+    {
+      "id": "deletion_function_word",
+      "error_type": "deletion (a short function word dropped)",
+      "reference": "rahul needs to check the staging database backups before the cutover",
+      "hypothesis": "rahul needs to check the staging database backups before cutover"
+    },
+    {
+      "id": "insertion_disfluency_and_repeat",
+      "error_type": "insertion (filler word and a duplicated word, typical of disfluent speech)",
+      "reference": "aarti will prepare the monthly compliance report",
+      "hypothesis": "aarti will um prepare the the monthly compliance report"
+    },
+    {
+      "id": "code_mixed_script_confusion",
+      "error_type": "substitution (romanised Hindi function words misheard as similar-sounding English words -- the failure mode code-mixed audio is expected to produce)",
+      "reference": "humne tay kiya hai ki sprint cadence two weeks rahegi",
+      "hypothesis": "humne te kiya hai key sprint cadence two weeks rahegi"
+    },
+    {
+      "id": "date_digit_deletion",
+      "error_type": "deletion (a digit dropped from a spoken date)",
+      "reference": "the deadline is twenty twenty six dash ten dash zero five",
+      "hypothesis": "the deadline is twenty twenty six dash ten dash five"
+    }
+  ]
+}

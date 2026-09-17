@@ -1,0 +1,676 @@
+{
+  "generated_at": "2026-09-16T16:14:20+00:00",
+  "backends": {
+    "stt": "baseline-stt-v1",
+    "diarizer": "baseline-diarizer-v1",
+    "segmenter": "embedding-texttiling-v1",
+    "extractor": "transformer-extractor-v1"
+  },
+  "extraction": {
+    "segmenter": "embedding-texttiling-v1",
+    "extractor": "transformer-extractor-v1",
+    "per_scenario": [
+      {
+        "scenario": "01_clean_english_standup",
+        "language": "en",
+        "segmentation": {
+          "blocks": 1,
+          "mean_confidence": 0.5
+        },
+        "decisions": {
+          "true_positives": 3,
+          "false_positives": 0,
+          "false_negatives": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "actions": {
+          "true_positives": 3,
+          "false_positives": 0,
+          "false_negatives": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "owner_accuracy": 1.0,
+          "deadline_accuracy": 1.0
+        }
+      },
+      {
+        "scenario": "02_code_mixed_hindi_english",
+        "language": "hi",
+        "segmentation": {
+          "blocks": 2,
+          "mean_confidence": 0.438
+        },
+        "decisions": {
+          "true_positives": 2,
+          "false_positives": 0,
+          "false_negatives": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "actions": {
+          "true_positives": 3,
+          "false_positives": 0,
+          "false_negatives": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "owner_accuracy": 1.0,
+          "deadline_accuracy": 1.0
+        }
+      },
+      {
+        "scenario": "03_pii_heavy_onboarding",
+        "language": "en",
+        "segmentation": {
+          "blocks": 3,
+          "mean_confidence": 0.436
+        },
+        "decisions": {
+          "true_positives": 1,
+          "false_positives": 0,
+          "false_negatives": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "actions": {
+          "true_positives": 1,
+          "false_positives": 1,
+          "false_negatives": 1,
+          "precision": 0.5,
+          "recall": 0.5,
+          "f1": 0.5,
+          "owner_accuracy": 1.0,
+          "deadline_accuracy": 1.0
+        }
+      },
+      {
+        "scenario": "04_prompt_injection_planning",
+        "language": "en",
+        "segmentation": {
+          "blocks": 1,
+          "mean_confidence": 0.5
+        },
+        "decisions": {
+          "true_positives": 2,
+          "false_positives": 0,
+          "false_negatives": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "actions": {
+          "true_positives": 2,
+          "false_positives": 0,
+          "false_negatives": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "owner_accuracy": 1.0,
+          "deadline_accuracy": 1.0
+        }
+      },
+      {
+        "scenario": "05_no_decisions_social",
+        "language": "en",
+        "segmentation": {
+          "blocks": 2,
+          "mean_confidence": 0.535
+        },
+        "decisions": {
+          "true_positives": 0,
+          "false_positives": 0,
+          "false_negatives": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        "actions": {
+          "true_positives": 0,
+          "false_positives": 0,
+          "false_negatives": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "owner_accuracy": null,
+          "deadline_accuracy": null
+        }
+      },
+      {
+        "scenario": "06_hedged_ambiguous",
+        "language": "en",
+        "segmentation": {
+          "blocks": 2,
+          "mean_confidence": 0.428
+        },
+        "decisions": {
+          "true_positives": 1,
+          "false_positives": 0,
+          "false_negatives": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "actions": {
+          "true_positives": 2,
+          "false_positives": 0,
+          "false_negatives": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "owner_accuracy": 1.0,
+          "deadline_accuracy": null
+        }
+      },
+      {
+        "scenario": "07_disfluent_noisy",
+        "language": "en",
+        "segmentation": {
+          "blocks": 2,
+          "mean_confidence": 0.463
+        },
+        "decisions": {
+          "true_positives": 1,
+          "false_positives": 0,
+          "false_negatives": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "actions": {
+          "true_positives": 2,
+          "false_positives": 0,
+          "false_negatives": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "owner_accuracy": 1.0,
+          "deadline_accuracy": null
+        }
+      },
+      {
+        "scenario": "08_long_quarterly_review",
+        "language": "en",
+        "segmentation": {
+          "blocks": 13,
+          "mean_confidence": 0.66
+        },
+        "decisions": {
+          "true_positives": 12,
+          "false_positives": 0,
+          "false_negatives": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "actions": {
+          "true_positives": 12,
+          "false_positives": 0,
+          "false_negatives": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "owner_accuracy": 1.0,
+          "deadline_accuracy": 1.0
+        }
+      }
+    ],
+    "decisions": {
+      "overall": {
+        "true_positives": 22,
+        "false_positives": 0,
+        "false_negatives": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "by_language": {
+        "en": {
+          "scenarios": 7,
+          "true_positives": 20,
+          "false_positives": 0,
+          "false_negatives": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "hi": {
+          "scenarios": 1,
+          "true_positives": 2,
+          "false_positives": 0,
+          "false_negatives": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        }
+      }
+    },
+    "actions": {
+      "overall": {
+        "true_positives": 25,
+        "false_positives": 1,
+        "false_negatives": 1,
+        "precision": 0.9615,
+        "recall": 0.9615,
+        "f1": 0.9615
+      },
+      "by_language": {
+        "en": {
+          "scenarios": 7,
+          "true_positives": 22,
+          "false_positives": 1,
+          "false_negatives": 1,
+          "precision": 0.9565,
+          "recall": 0.9565,
+          "f1": 0.9565
+        },
+        "hi": {
+          "scenarios": 1,
+          "true_positives": 3,
+          "false_positives": 0,
+          "false_negatives": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        }
+      }
+    },
+    "errors": {
+      "decisions": [],
+      "actions": [
+        {
+          "scenario": "03_pii_heavy_onboarding",
+          "kind": "false_positive",
+          "item_type": "action",
+          "text": "Let us start the vendor onboarding call.",
+          "detail": ""
+        },
+        {
+          "scenario": "03_pii_heavy_onboarding",
+          "kind": "false_negative",
+          "item_type": "action",
+          "text": "Send the signed agreement to arjun.mehta@example.com and copy the finance team.",
+          "detail": ""
+        }
+      ]
+    }
+  },
+  "baseline_comparison": {
+    "segmenter": "baseline-agenda-v1",
+    "extractor": "baseline-extractor-v1",
+    "per_scenario": [
+      {
+        "scenario": "01_clean_english_standup",
+        "language": "en",
+        "segmentation": {
+          "blocks": 2,
+          "mean_confidence": 0.6
+        },
+        "decisions": {
+          "true_positives": 3,
+          "false_positives": 0,
+          "false_negatives": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "actions": {
+          "true_positives": 3,
+          "false_positives": 0,
+          "false_negatives": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "owner_accuracy": 1.0,
+          "deadline_accuracy": 1.0
+        }
+      },
+      {
+        "scenario": "02_code_mixed_hindi_english",
+        "language": "hi",
+        "segmentation": {
+          "blocks": 2,
+          "mean_confidence": 0.6
+        },
+        "decisions": {
+          "true_positives": 1,
+          "false_positives": 0,
+          "false_negatives": 1,
+          "precision": 1.0,
+          "recall": 0.5,
+          "f1": 0.6667
+        },
+        "actions": {
+          "true_positives": 2,
+          "false_positives": 0,
+          "false_negatives": 1,
+          "precision": 1.0,
+          "recall": 0.6667,
+          "f1": 0.8,
+          "owner_accuracy": 1.0,
+          "deadline_accuracy": 1.0
+        }
+      },
+      {
+        "scenario": "03_pii_heavy_onboarding",
+        "language": "en",
+        "segmentation": {
+          "blocks": 3,
+          "mean_confidence": 0.45
+        },
+        "decisions": {
+          "true_positives": 1,
+          "false_positives": 0,
+          "false_negatives": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "actions": {
+          "true_positives": 1,
+          "false_positives": 0,
+          "false_negatives": 1,
+          "precision": 1.0,
+          "recall": 0.5,
+          "f1": 0.6667,
+          "owner_accuracy": 1.0,
+          "deadline_accuracy": 1.0
+        }
+      },
+      {
+        "scenario": "04_prompt_injection_planning",
+        "language": "en",
+        "segmentation": {
+          "blocks": 2,
+          "mean_confidence": 0.45
+        },
+        "decisions": {
+          "true_positives": 2,
+          "false_positives": 0,
+          "false_negatives": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "actions": {
+          "true_positives": 2,
+          "false_positives": 0,
+          "false_negatives": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "owner_accuracy": 1.0,
+          "deadline_accuracy": 1.0
+        }
+      },
+      {
+        "scenario": "05_no_decisions_social",
+        "language": "en",
+        "segmentation": {
+          "blocks": 1,
+          "mean_confidence": 0.45
+        },
+        "decisions": {
+          "true_positives": 0,
+          "false_positives": 0,
+          "false_negatives": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        "actions": {
+          "true_positives": 0,
+          "false_positives": 0,
+          "false_negatives": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "owner_accuracy": null,
+          "deadline_accuracy": null
+        }
+      },
+      {
+        "scenario": "06_hedged_ambiguous",
+        "language": "en",
+        "segmentation": {
+          "blocks": 1,
+          "mean_confidence": 0.45
+        },
+        "decisions": {
+          "true_positives": 1,
+          "false_positives": 0,
+          "false_negatives": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "actions": {
+          "true_positives": 1,
+          "false_positives": 0,
+          "false_negatives": 1,
+          "precision": 1.0,
+          "recall": 0.5,
+          "f1": 0.6667,
+          "owner_accuracy": 1.0,
+          "deadline_accuracy": null
+        }
+      },
+      {
+        "scenario": "07_disfluent_noisy",
+        "language": "en",
+        "segmentation": {
+          "blocks": 1,
+          "mean_confidence": 0.45
+        },
+        "decisions": {
+          "true_positives": 1,
+          "false_positives": 0,
+          "false_negatives": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "actions": {
+          "true_positives": 2,
+          "false_positives": 0,
+          "false_negatives": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "owner_accuracy": 1.0,
+          "deadline_accuracy": null
+        }
+      },
+      {
+        "scenario": "08_long_quarterly_review",
+        "language": "en",
+        "segmentation": {
+          "blocks": 12,
+          "mean_confidence": 0.75
+        },
+        "decisions": {
+          "true_positives": 12,
+          "false_positives": 0,
+          "false_negatives": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "actions": {
+          "true_positives": 12,
+          "false_positives": 0,
+          "false_negatives": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "owner_accuracy": 1.0,
+          "deadline_accuracy": 1.0
+        }
+      }
+    ],
+    "decisions": {
+      "overall": {
+        "true_positives": 21,
+        "false_positives": 0,
+        "false_negatives": 1,
+        "precision": 1.0,
+        "recall": 0.9545,
+        "f1": 0.9767
+      },
+      "by_language": {
+        "en": {
+          "scenarios": 7,
+          "true_positives": 20,
+          "false_positives": 0,
+          "false_negatives": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "hi": {
+          "scenarios": 1,
+          "true_positives": 1,
+          "false_positives": 0,
+          "false_negatives": 1,
+          "precision": 1.0,
+          "recall": 0.5,
+          "f1": 0.6667
+        }
+      }
+    },
+    "actions": {
+      "overall": {
+        "true_positives": 23,
+        "false_positives": 0,
+        "false_negatives": 3,
+        "precision": 1.0,
+        "recall": 0.8846,
+        "f1": 0.9388
+      },
+      "by_language": {
+        "en": {
+          "scenarios": 7,
+          "true_positives": 21,
+          "false_positives": 0,
+          "false_negatives": 2,
+          "precision": 1.0,
+          "recall": 0.913,
+          "f1": 0.9545
+        },
+        "hi": {
+          "scenarios": 1,
+          "true_positives": 2,
+          "false_positives": 0,
+          "false_negatives": 1,
+          "precision": 1.0,
+          "recall": 0.6667,
+          "f1": 0.8
+        }
+      }
+    },
+    "errors": {
+      "decisions": [
+        {
+          "scenario": "02_code_mixed_hindi_english",
+          "kind": "false_negative",
+          "item_type": "decision",
+          "text": "हमने तय किया है ki sprint cadence two weeks rahegi.",
+          "detail": ""
+        }
+      ],
+      "actions": [
+        {
+          "scenario": "02_code_mixed_hindi_english",
+          "kind": "false_negative",
+          "item_type": "action",
+          "text": "Aarti ko monthly compliance report prepare karna hai by 2026-10-05.",
+          "detail": ""
+        },
+        {
+          "scenario": "03_pii_heavy_onboarding",
+          "kind": "false_negative",
+          "item_type": "action",
+          "text": "Send the signed agreement to arjun.mehta@example.com and copy the finance team.",
+          "detail": ""
+        },
+        {
+          "scenario": "06_hedged_ambiguous",
+          "kind": "false_negative",
+          "item_type": "action",
+          "text": "Rahul will run a quick spike before then.",
+          "detail": ""
+        }
+      ]
+    }
+  },
+  "wer": {
+    "provenance": "SYNTHETIC. Hand-written (reference, simulated-hypothesis) pairs, not real ASR output. fixtures/meetings/ has no real speech to transcribe -- the .wav files are a 2-second placeholder tone, see DATASET.md's 'Known limitations'. Each hypothesis simulates one documented ASR error pattern (see each pair's error_type) so run_evaluation.py can demonstrate that the WER implementation computes correctly. These numbers are NOT a measurement of WhisperSTT's real-world accuracy and must never be reported as one -- see docs/ml-evaluation.md.",
+    "per_pair": [
+      {
+        "id": "exact_match",
+        "error_type": "none (sanity check: identical strings must score WER 0)",
+        "reference_words": 8,
+        "substitutions": 0,
+        "deletions": 0,
+        "insertions": 0,
+        "wer": 0.0
+      },
+      {
+        "id": "substitution_near_homophone",
+        "error_type": "substitution (near-homophone: decision/division)",
+        "reference_words": 13,
+        "substitutions": 1,
+        "deletions": 0,
+        "insertions": 0,
+        "wer": 0.0769
+      },
+      {
+        "id": "deletion_function_word",
+        "error_type": "deletion (a short function word dropped)",
+        "reference_words": 11,
+        "substitutions": 0,
+        "deletions": 1,
+        "insertions": 0,
+        "wer": 0.0909
+      },
+      {
+        "id": "insertion_disfluency_and_repeat",
+        "error_type": "insertion (filler word and a duplicated word, typical of disfluent speech)",
+        "reference_words": 7,
+        "substitutions": 0,
+        "deletions": 0,
+        "insertions": 2,
+        "wer": 0.2857
+      },
+      {
+        "id": "code_mixed_script_confusion",
+        "error_type": "substitution (romanised Hindi function words misheard as similar-sounding English words -- the failure mode code-mixed audio is expected to produce)",
+        "reference_words": 10,
+        "substitutions": 2,
+        "deletions": 0,
+        "insertions": 0,
+        "wer": 0.2
+      },
+      {
+        "id": "date_digit_deletion",
+        "error_type": "deletion (a digit dropped from a spoken date)",
+        "reference_words": 11,
+        "substitutions": 0,
+        "deletions": 1,
+        "insertions": 0,
+        "wer": 0.0909
+      }
+    ],
+    "corpus": {
+      "reference_words": 60,
+      "substitutions": 3,
+      "deletions": 2,
+      "insertions": 2,
+      "wer": 0.1167
+    }
+  }
+}

@@ -1,0 +1,122 @@
+"""Application settings, loaded from environment / .env (never from committed code)."""
+
+from __future__ import annotations
+
+from functools import lru_cache
+from pathlib import Path
+from typing import Literal
+
+from dotenv import load_dotenv
+from pydantic import Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+
+# `Settings` below reads `.env` for its own declared fields via pydantic-
+# settings, but pydantic-settings never writes those values into the real
+# process environment -- it only populates this one Settings instance. Code
+# that reads `os.getenv()` directly and is not a Settings field -- every
+# MOM_*_BACKEND switch and model config in `backend/app/ml/`, plus HF_TOKEN --
+# would silently never see `.env` outside Docker Compose (which loads `.env`
+# itself, separately, for its own `${VAR}` substitution). Loading it into
+# `os.environ` here, before anything else in the app is imported, makes the
+# local `python -m uvicorn ...` path and the Docker path behave the same way.
+# `python-dotenv` is already a transitive dependency of pydantic-settings, so
+# this adds nothing to requirements.txt. `override=False` (the default)
+# means a variable already set in the real shell environment still wins.
+load_dotenv(PROJECT_ROOT / ".env")
+
+
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file=PROJECT_ROOT / ".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
+
+    app_env: str = "development"
+    log_level: str = "INFO"
+
+    # Auth
+    jwt_secret: str = "dev-only-insecure-secret-change-me"
+    jwt_algorithm: str = "HS256"
+    access_token_ttl_minutes: int = 60
+
+    # Database
+    database_url: str = "sqlite:///./mom.db"
+
+    # Storage
+    upload_dir: Path = PROJECT_ROOT / "backend" / "app" / "storage" / "uploads"
+    export_dir: Path = PROJECT_ROOT / "backend" / "app" / "storage" / "exports"
+    max_upload_mb: int = 200
+
+    # Execution
+    # "inline" runs the pipeline inside the HTTP request -- simple, and correct
+    # while the baseline STT is instant. "queued" hands the run to a worker and
+    # returns immediately, which is required once real transcription takes
+    # minutes and the proxy would time the request out. Compose uses "queued".
+    run_execution: Literal["inline", "queued"] = "inline"
+
+    # Governance
+    agent_max_tool_calls: int = 25
+    # Confidence at/above which a proposal may skip the human gate.
+    # Default > 1.0 means "nothing is ever auto-approved" — the safe default.
+    agent_auto_approve_threshold: float = 1.01
+
+    # Registration
+    # "approved_only" is the default because docs/threat-model.md assumes a
+    # single-tenant internal deployment with no public registration -- a claim the
+    # code has to actually enforce. "open" restores self-service signup.
+    registration_mode: Literal["open", "approved_only"] = "approved_only"
+
+    # Demo
+    # Offers a one-click sign-in on the login screen using the seeded demo
+    # reviewer. Turn this off in any deployment holding real meetings -- it makes
+    # a known account one click away. The button is only shown when this is on
+    # AND the seeded account actually exists, so a fresh database never advertises
+    # a login that cannot work.
+    demo_mode: bool = True
+    demo_email: str = "reviewer@example.com"
+    demo_password: str = "reviewer-demo-password"
+
+    # Privacy
+    pii_scrubbing_enabled: bool = True
+
+    # Schema management
+    # Dev and test create tables directly from the ORM metadata for convenience.
+    # Deployments set this false and run `alembic upgrade head` instead, so schema
+    # changes are versioned and reviewable rather than applied implicitly at
+    # startup. Compose sets it false.
+    auto_create_tables: bool = True
+
+    # CORS
+    # Held as a raw CSV string: pydantic-settings JSON-decodes complex types
+    # straight from the environment, so a plain comma-separated value in .env
+    # would fail to parse before any validator could normalise it.
+    cors_origins_csv: str = Field(
+        default="http://localhost:5173,http://127.0.0.1:5173",
+        validation_alias="CORS_ORIGINS",
+    )
+
+    @property
+    def cors_origins(self) -> list[str]:
+        return [o.strip() for o in self.cors_origins_csv.split(",") if o.strip()]
+
+    @property
+    def is_production(self) -> bool:
+        return self.app_env.lower() in {"production", "prod"}
+
+    @property
+    def allowed_upload_bytes(self) -> int:
+        return self.max_upload_mb * 1024 * 1024
+
+
+@lru_cache
+def get_settings() -> Settings:
+    settings = Settings()
+    settings.upload_dir.mkdir(parents=True, exist_ok=True)
+    settings.export_dir.mkdir(parents=True, exist_ok=True)
+    return settings
+
+
+settings = get_settings()
