@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { api } from '../api'
 import ApprovalGate from '../components/ApprovalGate'
+import DomainMinutes from '../components/DomainMinutes'
+import MeetingRecorder from '../components/MeetingRecorder'
 import ReviewItem from '../components/ReviewItem'
 import { Badge, Banner, Empty, RedactedText, Spinner, formatDuration, formatTime } from '../components/common'
 
@@ -36,7 +38,7 @@ export default function Meetings() {
 
       <div className="grid-2">
         <div>
-          <UploadPanel
+          <IntakePanel
             onUploaded={(job) => {
               refreshJobs()
               setSelected(job.id)
@@ -94,7 +96,35 @@ export default function Meetings() {
   )
 }
 
-/* ------------------------------------------------------------------ upload */
+/* ------------------------------------------------------------------ intake */
+
+function IntakePanel({ onUploaded, onError }) {
+  const [mode, setMode] = useState('upload')
+
+  return (
+    <>
+      <div className="row" style={{ marginBottom: 10 }}>
+        <button
+          className={mode === 'upload' ? 'primary small' : 'small'}
+          onClick={() => setMode('upload')}
+        >
+          Upload file
+        </button>
+        <button
+          className={mode === 'record' ? 'primary small' : 'small'}
+          onClick={() => setMode('record')}
+        >
+          Record meeting
+        </button>
+      </div>
+      {mode === 'upload' ? (
+        <UploadPanel onUploaded={onUploaded} onError={onError} />
+      ) : (
+        <MeetingRecorder onUploaded={onUploaded} onError={onError} />
+      )}
+    </>
+  )
+}
 
 function UploadPanel({ onUploaded, onError }) {
   const [title, setTitle] = useState('')
@@ -311,9 +341,19 @@ function MeetingDetail({ jobId, onError, onNotice, onJobChanged, onDeleted }) {
 
       <div className="card">
         <div className="row" style={{ marginBottom: 14 }}>
-          {['minutes', 'transcript', 'trace', 'export'].map((t) => (
-            <button key={t} className={tab === t ? 'primary small' : 'small'} onClick={() => setTab(t)}>
-              {t[0].toUpperCase() + t.slice(1)}
+          {[
+            ['minutes', 'Minutes'],
+            ['domain', 'Domain Minutes'],
+            ['transcript', 'Transcript'],
+            ['trace', 'Trace'],
+            ['export', 'Export'],
+          ].map(([key, label]) => (
+            <button
+              key={key}
+              className={tab === key ? 'primary small' : 'small'}
+              onClick={() => setTab(key)}
+            >
+              {label}
             </button>
           ))}
         </div>
@@ -326,6 +366,28 @@ function MeetingDetail({ jobId, onError, onNotice, onJobChanged, onDeleted }) {
             busy={busy}
             onReviewDecision={(id, payload) => guard(() => api.reviewDecision(id, payload))}
             onReviewAction={(id, payload) => guard(() => api.reviewAction(id, payload))}
+          />
+        )}
+
+        {tab === 'domain' && (
+          <DomainMinutes
+            generatedMinutes={minutes.generated_minutes}
+            busy={busy}
+            onGenerate={(domain) =>
+              guard(() => api.generateMinutes(job.id, domain), 'Minutes generated as a draft.')
+            }
+            onEdit={(id, sections) =>
+              guard(() => api.editGeneratedMinutes(id, sections), 'Edits saved.')
+            }
+            onApprove={(id) =>
+              guard(() => api.approveGeneratedMinutes(id, null), 'Minutes approved.')
+            }
+            onExport={(id, format) =>
+              guard(
+                () => api.requestMinutesExport(job.id, id, format),
+                'Export requested — approve the gate above to produce the file.'
+              )
+            }
           />
         )}
 

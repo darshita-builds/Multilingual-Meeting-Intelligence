@@ -26,7 +26,7 @@ from typing import Any
 from sqlalchemy.orm import Session
 
 from backend.app.config import settings
-from backend.app.models import ActionItem, Decision, ItemStatus, Job
+from backend.app.models import ActionItem, Decision, GeneratedMinutes, ItemStatus, Job
 
 EXPORTABLE_STATUSES = {ItemStatus.APPROVED, ItemStatus.EDITED}
 
@@ -214,3 +214,78 @@ def build_export(
     if fmt == "tracker":
         return build_tracker_payload(db, job, actions)
     raise ExportError(f"Unsupported export format {fmt!r}.")
+
+
+# --------------------------------------------------------------------------- #
+# Generated minutes export
+#
+# A minutes document is only ever eligible once a reviewer has approved it
+# (enforced by the caller, `routes/generated_minutes.py`, before the gate is
+# even opened) -- the same "never ask a human to approve an export that
+# cannot succeed" discipline as `build_export` above.
+# --------------------------------------------------------------------------- #
+
+MINUTES_CSV_COLUMNS = ["section", "heading", "body"]
+
+
+def build_minutes_json(job: Job, minutes: GeneratedMinutes) -> ExportArtifact:
+    document = {
+        "schema_version": "1.0",
+        "generated_at": datetime.now(UTC).isoformat(),
+        "meeting": {
+            "job_id": job.id,
+            "title": job.title or job.original_filename,
+        },
+        "domain": minutes.domain.value,
+        "status": minutes.status.value,
+        "approved_at": minutes.approved_at.isoformat() if minutes.approved_at else None,
+        "sections": minutes.sections,
+    }
+    payload = json.dumps(document, indent=2, ensure_ascii=False).encode("utf-8")
+    path, digest = _write(payload, job.id, "minutes.json")
+    return ExportArtifact(
+        path=path, item_count=len(minutes.sections), sha256=digest, format="minutes_json"
+    )
+
+
+def build_minutes_csv(job: Job, minutes: GeneratedMinutes) -> ExportArtifact:
+    buffer = io.StringIO(newline="")
+    writer = csv.DictWriter(buffer, fieldnames=MINUTES_CSV_COLUMNS, quoting=csv.QUOTE_ALL)
+    writer.writeheader()
+    for section in minutes.sections:
+        writer.writerow(
+            {
+                "section": neutralise_csv(section.get("key", "")),
+                "heading": neutralise_csv(section.get("heading", "")),
+                "body": neutralise_csv(section.get("body", "")),
+            }
+        )
+    path, digest = _write(buffer.getvalue().encode("utf-8-sig"), job.id, "minutes.csv")
+    return ExportArtifact(
+        path=path, item_count=len(minutes.sections), sha256=digest, format="minutes_csv"
+    )
+
+
+def build_minutes_markdown(job: Job, minutes: GeneratedMinutes) -> ExportArtifact:
+    title = job.title or job.original_filename
+    lines = [f"# {title} — {minutes.domain.value.title()} Minutes", ""]
+    for section in minutes.sections:
+        lines.append(f"## {section.get('heading', '')}")
+        lines.append("")
+        lines.append(section.get("body", ""))
+        lines.append("")
+    payload = "\n".join(lines).encode("utf-8")
+    path, digest = _write(payload, job.id, "minutes.md")
+    return ExportArtifact(
+        path=path, item_count=len(minutes.sections), sha256=digest, format="minutes_markdown"
+    )
+
+
+def build_minutes_export(job: Job, minutes: GeneratedMinutes, fmt: str) -> ExportArtifact:
+    if fmt == "json":
+        return build_minutes_json(job, minutes)
+    if fmt == "csv":
+        return build_minutes_csv(job, minutes)
+    if fmt == "markdown":
+        return build_minutes_markdown(job, minutes)
+    raise ExportError(f"Unsupported minutes export format {fmt!r}.")

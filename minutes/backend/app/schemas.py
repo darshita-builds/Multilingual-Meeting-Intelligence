@@ -17,6 +17,8 @@ from backend.app.models import (
     ApprovalStatus,
     ItemStatus,
     JobStatus,
+    MeetingDomain,
+    MinutesStatus,
     Role,
     RunMode,
     RunStatus,
@@ -177,6 +179,51 @@ class ActionItemOut(BaseModel):
     created_at: datetime
 
 
+# --------------------------------------------------------------------------- #
+# Domain-specific generated minutes
+# --------------------------------------------------------------------------- #
+
+
+class MinutesSectionOut(BaseModel):
+    key: str
+    heading: str
+    body: str
+
+
+class MeetingDomainIn(BaseModel):
+    domain: MeetingDomain
+
+
+class GeneratedMinutesOut(BaseModel):
+    model_config = ORM
+    id: str
+    job_id: str
+    domain: MeetingDomain
+    status: MinutesStatus
+    sections: list[MinutesSectionOut]
+    original_sections: list[MinutesSectionOut]
+    source_tool: str
+    created_by_id: str | None
+    created_at: datetime
+    edited_by_id: str | None
+    edited_at: datetime | None
+    approved_by_id: str | None
+    approved_at: datetime | None
+    approval_note: str | None
+
+
+class GeneratedMinutesEdit(BaseModel):
+    sections: list[MinutesSectionOut] = Field(min_length=1)
+
+
+class GeneratedMinutesApprove(BaseModel):
+    note: str | None = Field(default=None, max_length=2000)
+
+
+class MinutesExportRequest(BaseModel):
+    format: Literal["json", "csv", "markdown"] = "markdown"
+
+
 class MinutesOut(BaseModel):
     """Everything the reviewer editor needs for one job, in one round trip."""
 
@@ -187,6 +234,7 @@ class MinutesOut(BaseModel):
     action_items: list[ActionItemOut]
     pending_approvals: list[ApprovalOut]
     latest_run: AgentRunOut | None
+    generated_minutes: list[GeneratedMinutesOut]
 
 
 class ReviewAction(BaseModel):

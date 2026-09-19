@@ -704,3 +704,72 @@ def request_export(
     _finalise(db, run, started)
     run_id_ctx.reset(token)
     return run, result
+
+
+def request_minutes_export(
+    db: Session,
+    audit: AuditLogger,
+    *,
+    job: Job,
+    generated_minutes: Any,
+    actor_id: str,
+    fmt: str,
+) -> tuple[AgentRun, Any]:
+    """Ask to export a domain-formatted minutes document. Mirrors `request_export`
+    exactly -- same gated-external-action shape, just a different tool/payload."""
+    run = AgentRun(job_id=job.id, mode=RunMode.AGENT, status=RunStatus.RUNNING)
+    db.add(run)
+    db.flush()
+
+    token = run_id_ctx.set(run.id)
+    started = time.perf_counter()
+
+    audit.human(
+        "export.minutes_requested",
+        user_id=actor_id,
+        job_id=job.id,
+        run_id=run.id,
+        resource_type="agent_run",
+        resource_id=run.id,
+        detail={"format": fmt, "generated_minutes_id": generated_minutes.id},
+    )
+
+    arguments = {
+        "job_id": job.id,
+        "generated_minutes_id": generated_minutes.id,
+        "format": fmt,
+    }
+    try:
+        ctx = _context(db, audit, job, run)
+        result = _invoke(ctx, "export_minutes_document", arguments)
+    except ApprovalRequired as required:
+        gate = gates.open_gate(
+            db,
+            audit,
+            job_id=job.id,
+            run_id=run.id,
+            action=required.tool,
+            summary=(
+                f"Export the {generated_minutes.domain.value} minutes document for "
+                f"'{job.title or job.original_filename}' as {fmt.upper()}. This releases "
+                "meeting data out of the system."
+            ),
+            payload=required.payload,
+            risk=required.risk,
+        )
+        run.status = RunStatus.AWAITING_APPROVAL
+        db.flush()
+        _finalise(db, run, started)
+        run_id_ctx.reset(token)
+        return run, gate
+    except Exception as exc:
+        _fail(db, audit, job, run, exc)
+        _finalise(db, run, started)
+        run_id_ctx.reset(token)
+        raise
+
+    _sync_counters(run, ctx)
+    run.status = RunStatus.COMPLETED
+    _finalise(db, run, started)
+    run_id_ctx.reset(token)
+    return run, result

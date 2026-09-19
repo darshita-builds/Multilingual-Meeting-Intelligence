@@ -13,6 +13,7 @@ from backend.app.models import (
     ActionItem,
     AgentRun,
     Decision,
+    GeneratedMinutes,
     ItemStatus,
     JobStatus,
 )
@@ -25,6 +26,7 @@ from backend.app.schemas import (
     AgendaBlockOut,
     ApprovalOut,
     DecisionOut,
+    GeneratedMinutesOut,
     JobOut,
     MinutesOut,
     ReviewAction,
@@ -64,6 +66,12 @@ def get_minutes(job: OwnedJob, db: DbSession) -> MinutesOut:
         .first()
     )
     blocks = job.transcript.agenda_blocks if job.transcript else []
+    generated = (
+        db.query(GeneratedMinutes)
+        .filter(GeneratedMinutes.job_id == job.id)
+        .order_by(GeneratedMinutes.created_at.desc())
+        .all()
+    )
 
     return MinutesOut(
         job=JobOut.model_validate(job),
@@ -75,6 +83,7 @@ def get_minutes(job: OwnedJob, db: DbSession) -> MinutesOut:
             ApprovalOut.model_validate(g) for g in gates.pending_for_job(db, job.id)
         ],
         latest_run=latest_run,  # type: ignore[arg-type]
+        generated_minutes=[GeneratedMinutesOut.model_validate(g) for g in generated],
     )
 
 
