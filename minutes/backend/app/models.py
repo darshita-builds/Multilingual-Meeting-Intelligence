@@ -100,6 +100,29 @@ class ActorType(enum.StrEnum):
     SYSTEM = "system"
 
 
+class MeetingDomain(enum.StrEnum):
+    """The context a reviewer picks so generated minutes are organised for it.
+
+    Not a new extraction dimension: the underlying decisions/actions/agenda
+    blocks are unchanged. This only decides which headings they are filed
+    under -- see `services/minutes_templates.py`.
+    """
+
+    TECHNOLOGY = "technology"
+    EDUCATION = "education"
+    HEALTHCARE = "healthcare"
+    BUSINESS = "business"
+
+
+class MinutesStatus(enum.StrEnum):
+    """A generated minutes document is never auto-approved just because a
+    template produced it -- mirrors ItemStatus's human-in-the-loop principle
+    for Decision/ActionItem, at the coarser granularity of the whole document."""
+
+    DRAFT = "draft"
+    APPROVED = "approved"
+
+
 # --------------------------------------------------------------------------- #
 # Identity
 # --------------------------------------------------------------------------- #
@@ -186,6 +209,9 @@ class Job(Base):
         back_populates="job", cascade="all, delete-orphan"
     )
     runs: Mapped[list[AgentRun]] = relationship(back_populates="job", cascade="all, delete-orphan")
+    generated_minutes: Mapped[list[GeneratedMinutes]] = relationship(
+        back_populates="job", cascade="all, delete-orphan"
+    )
 
 
 class Transcript(Base):
@@ -309,6 +335,45 @@ class ActionItem(Base):
 
     job: Mapped[Job] = relationship(back_populates="action_items")
     decision: Mapped[Decision | None] = relationship(back_populates="action_items")
+
+
+class GeneratedMinutes(Base):
+    """A domain-formatted minutes document rendered from a job's already-extracted
+    transcript/agenda/decisions/actions -- never a new extraction pass.
+
+    `sections` is the editable, current content; `original_sections` is the
+    immutable snapshot taken at generation time, same "preserve what the model
+    actually produced" principle as Decision.original_text /
+    ActionItem.original_text. Regenerating (a new domain, or after further
+    review) creates a NEW row rather than overwriting -- the history stays,
+    same append-only spirit as AgentRun/AuditEvent.
+    """
+
+    __tablename__ = "generated_minutes"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    job_id: Mapped[str] = mapped_column(ForeignKey("jobs.id", ondelete="CASCADE"), index=True)
+
+    domain: Mapped[MeetingDomain] = mapped_column(Enum(MeetingDomain), nullable=False)
+    # [{"key": str, "heading": str, "body": str}, ...]
+    sections: Mapped[list] = mapped_column(JSON, default=list)
+    original_sections: Mapped[list] = mapped_column(JSON, default=list)
+    status: Mapped[MinutesStatus] = mapped_column(
+        Enum(MinutesStatus), default=MinutesStatus.DRAFT, nullable=False, index=True
+    )
+    source_tool: Mapped[str] = mapped_column(String(128), default="minutes-template-v1")
+
+    created_by_id: Mapped[str | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+    edited_by_id: Mapped[str | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
+    edited_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+    approved_by_id: Mapped[str | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
+    approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    approval_note: Mapped[str | None] = mapped_column(Text)
+
+    job: Mapped[Job] = relationship(back_populates="generated_minutes")
 
 
 # --------------------------------------------------------------------------- #

@@ -1049,6 +1049,48 @@ details pre {
   }
 }
 
+/* ==========================================================================
+   Meeting recorder
+   ========================================================================== */
+
+.recorder-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--text-3);
+}
+.recorder-dot.live {
+  background: var(--danger);
+  animation: recorder-pulse 1.4s ease-in-out infinite;
+}
+@keyframes recorder-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+.recorder-timer {
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+/* ==========================================================================
+   Domain-specific minutes
+   ========================================================================== */
+
+.domain-picker {
+  border: 1px solid var(--accent-border);
+  background: var(--accent-soft);
+  border-radius: var(--r-lg);
+  padding: 16px 18px;
+  margin-bottom: 18px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

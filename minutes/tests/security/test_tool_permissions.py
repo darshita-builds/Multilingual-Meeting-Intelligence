@@ -74,6 +74,7 @@ def test_allow_list_is_the_documented_set():
         "extract_decisions_actions",
         "persist_minutes",
         "export_actions",
+        "export_minutes_document",
     }
 
 
@@ -220,9 +221,9 @@ def test_governance_surface_is_published_to_reviewers(client, auth):
     tools = client.get("/api/v1/governance/tools", headers=headers).json()
     assert {t["name"] for t in tools} == registry.names()
     gated = {t["name"] for t in tools if t["requires_approval"]}
-    assert gated == {"persist_minutes", "export_actions"}
+    assert gated == {"persist_minutes", "export_actions", "export_minutes_document"}
     assert all(t["input_schema"] for t in tools)
 
     policy = client.get("/api/v1/governance/policy", headers=headers).json()
-    assert policy["gated_tools"] == ["export_actions", "persist_minutes"]
+    assert policy["gated_tools"] == ["export_actions", "export_minutes_document", "persist_minutes"]
     assert policy["auto_approve_enabled"] is False, "nothing may be auto-approved by default"

@@ -134,4 +134,18 @@ export const api = {
   listExports: (jobId) => request(`/jobs/${jobId}/exports`),
   downloadExport: (id) => request(`/exports/${id}/download`, { raw: true }),
   getAudit: (jobId) => request(`/jobs/${jobId}/audit?limit=500`),
+
+  // --- domain-specific generated minutes ---
+  generateMinutes: (jobId, domain) =>
+    request(`/jobs/${jobId}/generated-minutes`, { method: 'POST', body: { domain } }),
+  listGeneratedMinutes: (jobId) => request(`/jobs/${jobId}/generated-minutes`),
+  editGeneratedMinutes: (id, sections) =>
+    request(`/generated-minutes/${id}`, { method: 'PATCH', body: { sections } }),
+  approveGeneratedMinutes: (id, note) =>
+    request(`/generated-minutes/${id}/approve`, { method: 'POST', body: { note } }),
+  requestMinutesExport: (jobId, minutesId, format) =>
+    request(`/jobs/${jobId}/generated-minutes/${minutesId}/export`, {
+      method: 'POST',
+      body: { format },
+    }),
 }

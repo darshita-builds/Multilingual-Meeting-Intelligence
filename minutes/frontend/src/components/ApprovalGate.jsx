@@ -33,12 +33,18 @@ export default function ApprovalGate({ gate, onDecide, busy }) {
 
       {payload.format && (
         <p className="muted" style={{ margin: '0 0 10px' }}>
-          Format: <strong>{String(payload.format).toUpperCase()}</strong> · Scope:{' '}
-          <strong>
-            {payload.include_unapproved
-              ? 'all non-rejected items'
-              : 'reviewer-approved items only'}
-          </strong>
+          Format: <strong>{String(payload.format).toUpperCase()}</strong>
+          {payload.include_unapproved !== undefined && (
+            <>
+              {' '}
+              · Scope:{' '}
+              <strong>
+                {payload.include_unapproved
+                  ? 'all non-rejected items'
+                  : 'reviewer-approved items only'}
+              </strong>
+            </>
+          )}
         </p>
       )}
 

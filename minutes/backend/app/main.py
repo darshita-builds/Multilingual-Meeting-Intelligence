@@ -11,7 +11,16 @@ from fastapi.responses import JSONResponse, PlainTextResponse
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from sqlalchemy import text
 
-from backend.app.api.routes import approvals, audit, auth, exports, jobs, minutes, runs
+from backend.app.api.routes import (
+    approvals,
+    audit,
+    auth,
+    exports,
+    generated_minutes,
+    jobs,
+    minutes,
+    runs,
+)
 from backend.app.config import settings
 from backend.app.db import SessionLocal, engine, init_db
 from backend.app.observability.logging import configure_logging, get_logger
@@ -178,6 +187,7 @@ app.include_router(jobs.router, prefix=API_PREFIX)
 app.include_router(runs.router, prefix=API_PREFIX)
 app.include_router(approvals.router, prefix=API_PREFIX)
 app.include_router(minutes.router, prefix=API_PREFIX)
+app.include_router(generated_minutes.router, prefix=API_PREFIX)
 app.include_router(exports.router, prefix=API_PREFIX)
 app.include_router(audit.router, prefix=API_PREFIX)
 

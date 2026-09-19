@@ -20,6 +20,9 @@ MEDIA_TYPES = {
     "csv": "text/csv",
     "json": "application/json",
     "tracker": "application/json",
+    "minutes_json": "application/json",
+    "minutes_csv": "text/csv",
+    "minutes_markdown": "text/markdown",
 }
 
 

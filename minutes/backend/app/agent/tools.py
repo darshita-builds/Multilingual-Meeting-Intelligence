@@ -29,7 +29,15 @@ from pydantic import BaseModel, Field
 from backend.app.agent.registry import ToolContext, ToolSpec, deny_tool_call, registry
 from backend.app.ml import registry as ml
 from backend.app.ml.base import AgendaBlockResult, MLServiceError, Segment
-from backend.app.models import ActionItem, Decision, ExportRecord, ItemStatus, Job
+from backend.app.models import (
+    ActionItem,
+    Decision,
+    ExportRecord,
+    GeneratedMinutes,
+    ItemStatus,
+    Job,
+    MinutesStatus,
+)
 from backend.app.observability.metrics import exports_total
 from backend.app.security.injection import scan, wrap_untrusted
 
@@ -318,6 +326,63 @@ def _export_actions(args: ExportActionsArgs, ctx: ToolContext) -> dict[str, Any]
 
 
 # --------------------------------------------------------------------------- #
+# 7. export_minutes_document -- GATED
+#
+# Mirrors export_actions exactly: an external side effect, always behind a
+# human gate. The only extra rule is that the underlying document must still
+# be reviewer-approved at the moment this actually runs, not just when the
+# gate was opened -- editing a document reverts it to draft (see
+# routes/generated_minutes.py), and that reversal must be honoured even if a
+# gate was approved before the edit happened.
+# --------------------------------------------------------------------------- #
+
+
+class ExportMinutesArgs(BaseModel):
+    job_id: str
+    generated_minutes_id: str
+    format: Literal["json", "csv", "markdown"] = "markdown"
+
+
+def _export_minutes_document(args: ExportMinutesArgs, ctx: ToolContext) -> dict[str, Any]:
+    from backend.app.services import export as export_service
+
+    job = _require_own_job(ctx, "export_minutes_document", args.job_id)
+
+    doc = ctx.db.get(GeneratedMinutes, args.generated_minutes_id)
+    if doc is None or doc.job_id != job.id:
+        deny_tool_call(
+            ctx, "export_minutes_document", "unknown_minutes_document", args.generated_minutes_id
+        )
+    if doc.status is not MinutesStatus.APPROVED:
+        deny_tool_call(
+            ctx,
+            "export_minutes_document",
+            "minutes_not_approved",
+            f"document {doc.id} is {doc.status.value}, not approved",
+        )
+
+    artifact = export_service.build_minutes_export(job, doc, args.format)
+    record = ExportRecord(
+        job_id=job.id,
+        run_id=ctx.run_id,
+        format=artifact.format,
+        stored_path=str(artifact.path),
+        item_count=artifact.item_count,
+        sha256=artifact.sha256,
+    )
+    ctx.db.add(record)
+    ctx.db.flush()
+
+    exports_total.labels(format=artifact.format).inc()
+    return {
+        "export_id": record.id,
+        "format": artifact.format,
+        "item_count": artifact.item_count,
+        "sha256": artifact.sha256,
+    }
+
+
+# --------------------------------------------------------------------------- #
 # Registration -- the allow-list itself
 # --------------------------------------------------------------------------- #
 
@@ -401,6 +466,21 @@ registry.register(
     )
 )
 
+registry.register(
+    ToolSpec(
+        name="export_minutes_document",
+        description=(
+            "Export an approved, domain-formatted minutes document as JSON, CSV or Markdown."
+        ),
+        side_effect="external",
+        input_model=ExportMinutesArgs,
+        handler=_export_minutes_document,
+        requires_approval=True,
+        max_calls_per_run=3,
+        risk="high",
+    )
+)
+
 
 #: Tools a run may use, by mode. The no-agent baseline arm gets the same ML tools
 #: but no export capability at all -- it is a straight-through pipeline.
@@ -412,7 +492,7 @@ PIPELINE_TOOLS = {
     "persist_minutes",
 }
 
-AGENT_TOOLS = PIPELINE_TOOLS | {"export_actions"}
+AGENT_TOOLS = PIPELINE_TOOLS | {"export_actions", "export_minutes_document"}
 
 
 def scan_for_injection(text: str) -> dict[str, Any]:
