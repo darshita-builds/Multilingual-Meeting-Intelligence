@@ -84,6 +84,7 @@ export const api = {
   me: () => request('/auth/me'),
   demoAvailability: () => request('/auth/demo'),
   registrationPolicy: () => request('/auth/registration-policy'),
+  getCaptcha: () => request('/auth/captcha'),
   listApprovedEmails: () => request('/auth/approved-emails'),
   approveEmail: (email, note) =>
     request('/auth/approved-emails', { method: 'POST', body: { email, note } }),

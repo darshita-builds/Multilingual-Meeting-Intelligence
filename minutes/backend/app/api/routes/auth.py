@@ -13,6 +13,7 @@ from backend.app.models import ActorType, ApprovedEmail, Role, User
 from backend.app.schemas import (
     ApprovedEmailCreate,
     ApprovedEmailOut,
+    CaptchaChallengeOut,
     LoginRequest,
     MessageOut,
     TokenResponse,
@@ -20,6 +21,7 @@ from backend.app.schemas import (
     UserOut,
 )
 from backend.app.security.auth import create_access_token, hash_password, verify_password
+from backend.app.security.captcha import captcha_store
 from backend.app.security.ratelimit import (
     RateLimitExceeded,
     client_ip,
@@ -36,6 +38,26 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 _DUMMY_HASH = "$2b$12$abcdefghijklmnopqrstuvOe0Q6Zc0N1uVhWxJ5Jz5Y8kLmNqRsTu"
 
 
+@router.get(
+    "/captcha",
+    response_model=CaptchaChallengeOut,
+    summary="Issue a CAPTCHA challenge for registration",
+)
+def get_captcha() -> CaptchaChallengeOut:
+    """Public and unauthenticated by necessity -- issued before an account exists.
+
+    Only meaningful when `settings.captcha_enabled` is on; the login screen
+    checks that via `registration-policy` before showing the challenge at all,
+    but this endpoint answers regardless so a client is never left guessing.
+    """
+    challenge = captcha_store.issue()
+    return CaptchaChallengeOut(
+        captcha_id=challenge.id,
+        question=challenge.question,
+        expires_in=settings.captcha_ttl_seconds,
+    )
+
+
 @router.post(
     "/register",
     response_model=UserOut,
@@ -44,6 +66,9 @@ _DUMMY_HASH = "$2b$12$abcdefghijklmnopqrstuvOe0Q6Zc0N1uVhWxJ5Jz5Y8kLmNqRsTu"
 )
 def register(payload: UserCreate, request: Request, db: DbSession, audit: Audit) -> User:
     _enforce(register_ip_limiter, client_ip(request), audit, reason="register_rate_limited")
+
+    if settings.captcha_enabled:
+        _enforce_captcha(payload, audit)
 
     # The threat model assumes no public registration; this is what enforces it.
     if not approvals.is_allowed(db, payload.email):
@@ -150,6 +175,7 @@ def registration_policy(db: DbSession) -> dict:
     return {
         "mode": settings.registration_mode,
         "self_service": settings.registration_mode == "open",
+        "captcha_required": settings.captcha_enabled,
         "message": (
             "Anyone may register."
             if settings.registration_mode == "open"
@@ -264,6 +290,29 @@ def me(user: CurrentUser) -> User:
 )
 def list_users(db: DbSession, _: RequireAdmin) -> list[User]:
     return db.query(User).order_by(User.created_at).all()
+
+
+def _enforce_captcha(payload: UserCreate, audit: Audit) -> None:
+    """Raise 400 unless the request carries a solved, unexpired, unused challenge.
+
+    Checked before the allow-list lookup so a captcha failure never leaks
+    whether an email is approved -- the two checks are deliberately
+    independent refusals.
+    """
+    solved = bool(payload.captcha_id) and bool(payload.captcha_answer)
+    if solved:
+        solved = captcha_store.verify(payload.captcha_id, payload.captcha_answer)
+    if not solved:
+        audit.refusal(
+            "auth.captcha_failed",
+            ActorType.HUMAN,
+            actor_id=None,
+            detail={"email": payload.email},
+        )
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="CAPTCHA verification failed or expired. Request a new challenge and try again.",
+        )
 
 
 def _enforce(limiter, key: str, audit: Audit, *, reason: str, email: str | None = None) -> None:

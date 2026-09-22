@@ -47,6 +47,7 @@ from backend.app.db import Base, SessionLocal, engine  # noqa: E402
 from backend.app.main import app  # noqa: E402
 from backend.app.models import Role, User  # noqa: E402
 from backend.app.security.auth import hash_password  # noqa: E402
+from backend.app.security.captcha import captcha_store  # noqa: E402
 from backend.app.security.ratelimit import (  # noqa: E402
     login_account_limiter,
     login_ip_limiter,
@@ -109,9 +110,11 @@ def _reset_rate_limiters():
     """
     for limiter in (login_ip_limiter, login_account_limiter, register_ip_limiter):
         limiter.clear()
+    captcha_store.clear()
     yield
     for limiter in (login_ip_limiter, login_account_limiter, register_ip_limiter):
         limiter.clear()
+    captcha_store.clear()
 
 
 @pytest.fixture
@@ -161,6 +164,15 @@ def open_registration(monkeypatch):
     from backend.app.config import settings as app_settings
 
     monkeypatch.setattr(app_settings, "registration_mode", "open")
+    yield
+
+
+@pytest.fixture
+def captcha_enabled(monkeypatch):
+    """Turn the CAPTCHA gate on for one test. Off by default (see config.py)."""
+    from backend.app.config import settings as app_settings
+
+    monkeypatch.setattr(app_settings, "captcha_enabled", True)
     yield
 
 

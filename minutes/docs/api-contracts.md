@@ -58,6 +58,7 @@ never returned; the `trace_id` joins to the server log instead.
 | `GET` | `/auth/users` | List accounts (admin only) |
 | `GET` | `/auth/demo` | Whether one-click demo sign-in is available |
 | `GET` | `/auth/registration-policy` | How registration is gated (public) |
+| `GET` | `/auth/captcha` | Issue a CAPTCHA challenge (public) |
 | `GET` | `/auth/approved-emails` | The registration allow-list (admin only) |
 | `POST` | `/auth/approved-emails` | Approve an address (admin only) |
 | `DELETE` | `/auth/approved-emails/{id}` | Withdraw approval (admin only) |
@@ -75,6 +76,15 @@ created with that address — deactivating a user is a separate, deliberate acti
 `GET /auth/demo` tells the login screen whether to offer one-click sign-in. It
 reports unavailable when the seeded account does not exist, so a fresh database
 never advertises a login that would fail.
+
+**CAPTCHA** (`security/captcha.py`) is off by default (`CAPTCHA_ENABLED=false`)
+and needs no external key. `GET /auth/registration-policy` now also reports
+`captcha_required`. When on, `POST /auth/register` requires `captcha_id` +
+`captcha_answer` (from `GET /auth/captcha`) and returns **400** if missing,
+wrong, expired, or already used — checked before the allow-list lookup, so a
+captcha failure never reveals whether the email would have been approved.
+Challenges are single-use and in-process (same documented single-instance
+limitation as the rate limiters above).
 
 Login returns the same status and message for an unknown email and a wrong
 password, and burns a dummy hash on the unknown-email path so response time does

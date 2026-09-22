@@ -10,12 +10,29 @@ export default function Login({ onSignedIn }) {
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [demo, setDemo] = useState(null)
+  const [captchaRequired, setCaptchaRequired] = useState(false)
+  const [captcha, setCaptcha] = useState(null)
+  const [captchaAnswer, setCaptchaAnswer] = useState('')
 
   // Only offer the demo button once the server confirms the seeded account
   // exists. Showing it on a fresh database would advertise a login that fails.
   useEffect(() => {
     api.demoAvailability().then(setDemo).catch(() => setDemo(null))
+    // CAPTCHA_ENABLED defaults to false (see backend/app/config.py); when it
+    // is, the challenge itself is fetched lazily, only once the register form
+    // is actually shown (below), not on every page load.
+    api.registrationPolicy().then((p) => setCaptchaRequired(!!p.captcha_required)).catch(() => {})
   }, [])
+
+  const refreshCaptcha = () => {
+    setCaptchaAnswer('')
+    api.getCaptcha().then(setCaptcha).catch(() => setCaptcha(null))
+  }
+
+  useEffect(() => {
+    if (mode === 'register' && captchaRequired && !captcha) refreshCaptcha()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, captchaRequired])
 
   const signInAsDemo = async () => {
     setError('')
@@ -37,13 +54,21 @@ export default function Login({ onSignedIn }) {
     setBusy(true)
     try {
       if (mode === 'register') {
-        await api.register({ email, password, full_name: fullName || null, role: 'reviewer' })
+        const payload = { email, password, full_name: fullName || null, role: 'reviewer' }
+        if (captchaRequired) {
+          payload.captcha_id = captcha?.captcha_id
+          payload.captcha_answer = captchaAnswer
+        }
+        await api.register(payload)
       }
       const session = await api.login(email, password)
       setSession(session.access_token, session.user)
       onSignedIn(session.user)
     } catch (err) {
       setError(err.message)
+      // A challenge is single-use (backend/app/security/captcha.py) -- any
+      // failed attempt has consumed it, so get a fresh one for the retry.
+      if (mode === 'register' && captchaRequired) refreshCaptcha()
     } finally {
       setBusy(false)
     }
@@ -85,6 +110,19 @@ export default function Login({ onSignedIn }) {
               autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
             />
           </div>
+          {mode === 'register' && captchaRequired && (
+            <div>
+              <label>{captcha ? captcha.question : 'Loading challenge…'}</label>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={captchaAnswer}
+                onChange={(e) => setCaptchaAnswer(e.target.value)}
+                required
+                autoComplete="off"
+              />
+            </div>
+          )}
           <button className="primary" type="submit" disabled={busy} style={{ width: '100%' }}>
             {busy ? 'Please wait…' : mode === 'login' ? 'Sign in' : 'Create account & sign in'}
           </button>

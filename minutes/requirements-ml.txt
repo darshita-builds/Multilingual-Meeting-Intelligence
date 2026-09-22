@@ -31,6 +31,25 @@ faster-whisper==1.1.1
 # and set HF_TOKEN before use. See pyannote_diarizer.py's module docstring.
 pyannote.audio==3.3.2
 
+# torch/torchaudio are pyannote.audio's own transitive dependencies (it only
+# declares torch>=2.0.0 / torchaudio>=2.2.0), but pinned explicitly here as a
+# matched pair -- verified necessary on Python 3.13/Windows in a real install:
+# letting pip resolve "latest" pulls torch 2.14.0 with torchaudio 2.11.0 (the
+# newest torchaudio wheel available at all for cp313), and torchaudio 2.11.0
+# has removed the `torchaudio.info()`/`AudioMetaData` API that pyannote.audio
+# 3.3.2's io.py still calls, so diarization fails at import/first-use with
+# `AttributeError: module 'torchaudio' has no attribute 'AudioMetaData'` --
+# not a missing-dependency error, so it is not caught by the registry's
+# fallback-to-baseline path either. torchaudio's compiled extension is also
+# ABI-locked to one exact matching torch build (an unmatched pair fails to
+# even import, with `OSError: Could not load this library`), so torch must be
+# pinned to the same release. torch==2.6.0 is the newest pair confirmed (on
+# this project's target CPU-only setup) to still expose the old API; refresh
+# this pair only after confirming against a real pyannote.audio run, the same
+# discipline requirements.txt documents for its own pins.
+torch==2.6.0
+torchaudio==2.6.0
+
 # --- Agenda segmentation + decision/action extraction ---
 # (embedding_segmenter.py, transformer_extractor.py -- share one model family
 # via sentence_embeddings.py)

@@ -82,6 +82,16 @@ class Settings(BaseSettings):
     # Privacy
     pii_scrubbing_enabled: bool = True
 
+    # CAPTCHA
+    # Off by default so existing deployments and the existing registration test
+    # suite (tests/security/test_registration_allowlist.py) are unaffected --
+    # matches the project's existing convention of additive, opt-in security
+    # controls (registration_mode, pii_scrubbing_enabled). The registration
+    # allow-list is the real access control; this only raises the cost of
+    # scripted spam against /auth/register once turned on.
+    captcha_enabled: bool = False
+    captcha_ttl_seconds: int = 300
+
     # Schema management
     # Dev and test create tables directly from the ORM metadata for convenience.
     # Deployments set this false and run `alembic upgrade head` instead, so schema

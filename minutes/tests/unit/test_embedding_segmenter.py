@@ -7,7 +7,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from backend.app.ml.base import MLServiceError
+from backend.app.ml.base import MLServiceError, Segment
 from backend.app.ml.embedding_segmenter import EmbeddingAgendaSegmenter
 
 # One-hot "topic" vectors: within a topic, every sentence gets the identical
@@ -110,3 +110,69 @@ def test_confidence_floor_when_there_is_no_valley():
 
 def test_confidence_ceiling_on_a_very_deep_valley():
     assert EmbeddingAgendaSegmenter._confidence([1.0, -2.0, 1.0], 1) == 0.95
+
+
+# --------------------------------------------------------------------------- #
+# Real-world regression: punctuation-free Hindi ASR output no longer
+# collapses into one block. See docs/integration.md's 2026-09-22 entry --
+# a real noisy Hindi recording produced a Whisper transcript with zero
+# sentence-terminating punctuation, which this segmenter's `len(sentences)
+# <= 1` guard turned into exactly one agenda block for a 3-topic, 3-minute
+# meeting.
+# --------------------------------------------------------------------------- #
+
+
+def test_punctuation_free_hindi_transcript_no_longer_collapses_to_one_block(monkeypatch):
+    monkeypatch.setattr("backend.app.ml.embedding_segmenter.embed_sentences", _four_topic_encode)
+    text = (
+        "पहला मुद्दा डिलीवरी में देरी की बात है, दूसरी बार भी यही समस्या हुई, "
+        "इस पर तुरंत ध्यान देना जरूरी है, "
+        "दूसरा मुद्दा गोदाम का स्टोक है, तेल का स्टोक बहुत कम है, "
+        "अगले हफ्ते तक अडर देना चाहिए, "
+        "तीसरा मुद्दा ग्राहकों का पेमेंट है, तीन ग्राहकों का पेमेंट बकाया है, "
+        "इस हफ्ते फोन करके बात करनी है, "
+        "आखिरी मुद्दा अगली बैठक की तारीख है, सोमवार को अगली बैठक होगी, "
+        "सब लोग समय पर आएं"
+    )
+    segmenter = EmbeddingAgendaSegmenter()
+
+    result = segmenter.segment(text)
+
+    assert len(result.blocks) > 1
+    # contiguous, non-overlapping, and every block's text is real transcript
+    # content -- nothing invented, matching the same contract the punctuated
+    # path already guarantees.
+    for prev, nxt in zip(result.blocks, result.blocks[1:], strict=False):
+        assert prev.end_char <= nxt.start_char
+    for block in result.blocks:
+        assert block.text.strip()
+
+
+def test_segments_are_used_as_the_top_priority_split_signal(monkeypatch):
+    """When real STT segment boundaries are supplied and align with `text`,
+    they are used directly rather than re-deriving boundaries from
+    punctuation or commas -- reusing the same 4-topic synthetic transcript as
+    the punctuation-based test above, but as unpunctuated STT segments (no
+    periods at all) instead of sentences split on periods."""
+    monkeypatch.setattr("backend.app.ml.embedding_segmenter.embed_sentences", _four_topic_encode)
+
+    clauses = [c.rstrip(". ") for c in SYNTHETIC_TRANSCRIPT.split(". ") if c.strip()]
+    text = " ".join(clauses)  # the same content, but with no terminating punctuation
+    segments = []
+    cursor = 0.0
+    for c in clauses:
+        segments.append(Segment(start=cursor, end=cursor + 1.0, text=c))
+        cursor += 1.0
+    segmenter = EmbeddingAgendaSegmenter()
+
+    # Without segments, this text has zero punctuation and 66 words (well
+    # above the sparsity floor) -- it would fall through to the comma
+    # fallback, which finds no commas either here, so it would degrade to a
+    # single block. Confirms segments really are doing the work below.
+    assert len(segmenter.segment(text).blocks) == 1
+
+    result = segmenter.segment(text, segments)
+
+    assert len(result.blocks) == 4
+    for prev, nxt in zip(result.blocks, result.blocks[1:], strict=False):
+        assert prev.end_char <= nxt.start_char

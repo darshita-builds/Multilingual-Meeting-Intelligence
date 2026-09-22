@@ -71,6 +71,16 @@ addition to the Devanagari script sniff, so Hindi cues (including the "ko"/
 list is intentionally small and un-evaluated beyond the one fixture scenario
 that exercises it (`02_code_mixed_hindi_english`) -- see `docs/ml-evaluation.md`.
 
+Sentence splitting (2026-09-22)
+--------------------------------
+Sentence boundaries come from `multilingual_cues.split_into_sentences()`, the
+same shared, tiered splitter `embedding_segmenter.py` uses (punctuation, with
+a comma-based fallback when a transcript -- real noisy Hindi ASR output, in
+particular -- carries no sentence-terminating punctuation at all). Before
+this, a punctuation-free block was one giant "sentence," which is exactly why
+a real Hindi meeting produced one action item scoped to its entire transcript
+instead of the sentence that actually stated it -- see docs/integration.md.
+
 Contract notes
 --------------
 * Raises `MLServiceError`, never a `sentence-transformers`/torch exception.
@@ -95,7 +105,7 @@ from backend.app.ml.base import (
     ExtractionResult,
     MLServiceError,
 )
-from backend.app.ml.multilingual_cues import LanguageCues, cues_for
+from backend.app.ml.multilingual_cues import LanguageCues, cues_for, split_into_sentences
 from backend.app.ml.sentence_embeddings import encode as embed_sentences
 
 # The stub's original placeholder (`distilbert-base-multilingual-cased`) named a
@@ -112,7 +122,6 @@ DEFAULT_THRESHOLD_HIGH = float(os.getenv("MOM_EXTRACTOR_THRESHOLD_HIGH", "0.55")
 DEFAULT_THRESHOLD_LOW = float(os.getenv("MOM_EXTRACTOR_THRESHOLD_LOW", "0.20"))
 DEFAULT_MIN_WORDS = int(os.getenv("MOM_EXTRACTOR_MIN_WORDS", "4"))
 
-_SENTENCE_SPLIT = re.compile(r"[^.!?।\n]+[.!?।]?")
 _DEVANAGARI = re.compile(r"[ऀ-ॿ]")
 _ALL_CAPS = re.compile(r"^[A-Z0-9_:\[\]]+$")
 # Common romanised Hindi function words -- catches code-mixed sentences with
@@ -300,4 +309,4 @@ class TransformerExtractor:
 
     @staticmethod
     def _sentences(text: str) -> list[str]:
-        return [m.group(0).strip() for m in _SENTENCE_SPLIT.finditer(text) if m.group(0).strip()]
+        return [s for s, _, _ in split_into_sentences(text)]

@@ -37,6 +37,17 @@ class UserCreate(BaseModel):
     password: str = Field(min_length=10, max_length=128)
     full_name: str | None = Field(default=None, max_length=255)
     role: Role = Role.REVIEWER
+    # Only checked when settings.captcha_enabled is True (default off -- see
+    # config.py). Optional here so the schema validates either way; the route
+    # itself enforces presence when the feature is on.
+    captcha_id: str | None = None
+    captcha_answer: str | None = None
+
+
+class CaptchaChallengeOut(BaseModel):
+    captcha_id: str
+    question: str
+    expires_in: int
 
 
 class UserOut(BaseModel):

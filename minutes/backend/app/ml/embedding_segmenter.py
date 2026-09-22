@@ -42,16 +42,27 @@ Known limitations (see `docs/ml-evaluation.md`)
   in `backend/app/ml/evaluation/segmentation_metrics.py`; only the corpus in
   `fixtures/meetings/` has been checked against it, and it is small and
   English-dominant (see the dataset card's own limitations section).
+
+Sentence splitting (2026-09-22)
+--------------------------------
+Sentence boundaries come from `multilingual_cues.split_into_sentences()`, not
+a local regex -- see that function's docstring for the full tiered strategy
+(real STT segment boundaries, then punctuation, then a comma-based fallback
+for punctuation-free ASR output like real Hindi transcripts). This module
+does not decide when to fall back; it only optionally supplies `segments`
+(accepted since this class's Protocol signature was written, but unused
+until now -- no caller in this codebase currently passes them, so this stays
+inert unless a caller starts to).
 """
 
 from __future__ import annotations
 
 import os
-import re
 import statistics
 from typing import Any
 
 from backend.app.ml.base import AgendaBlockResult, MLServiceError, Segment, SegmentationResult
+from backend.app.ml.multilingual_cues import Span, split_into_sentences
 from backend.app.ml.sentence_embeddings import encode as embed_sentences
 
 DEFAULT_MODEL = os.getenv("MOM_EMBEDDING_MODEL", "paraphrase-multilingual-MiniLM-L12-v2")
@@ -59,9 +70,7 @@ DEFAULT_MIN_SENTENCES = int(os.getenv("MOM_SEGMENT_MIN_SENTENCES", "2"))
 DEFAULT_MAX_SENTENCES = int(os.getenv("MOM_SEGMENT_MAX_SENTENCES", "10"))
 DEFAULT_STD_MULTIPLIER = float(os.getenv("MOM_SEGMENT_STD_MULTIPLIER", "1.0"))
 
-_SENTENCE_SPLIT = re.compile(r"[^.!?।\n]+[.!?।]?")
-
-_Sentence = tuple[str, int, int]  # (text, start_char, end_char)
+_Sentence = Span  # (text, start_char, end_char)
 
 
 class EmbeddingAgendaSegmenter:
@@ -87,7 +96,7 @@ class EmbeddingAgendaSegmenter:
                 blocks=[self._empty_block(text)], model_name=self._model_name()
             )
 
-        sentences = self._sentences(text)
+        sentences = split_into_sentences(text, segments)
         if len(sentences) <= 1:
             return SegmentationResult(
                 blocks=[self._whole_text_block(sentences, text)], model_name=self._model_name()
@@ -202,15 +211,6 @@ class EmbeddingAgendaSegmenter:
             end_char=len(text or ""),
             confidence=0.0,
         )
-
-    @staticmethod
-    def _sentences(text: str) -> list[_Sentence]:
-        out = []
-        for m in _SENTENCE_SPLIT.finditer(text):
-            s = m.group(0).strip()
-            if s:
-                out.append((s, m.start(), m.end()))
-        return out
 
     @staticmethod
     def _confidence(sims: list[float], i: int) -> float:

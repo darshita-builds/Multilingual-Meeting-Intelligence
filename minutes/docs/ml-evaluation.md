@@ -7,6 +7,27 @@ alongside [`fixtures/meetings/DATASET.md`](../fixtures/meetings/DATASET.md)
 (provenance of the transcripts themselves) and
 [`docs/architecture.md`](architecture.md) (the ML seam / contract).
 
+**Two different kinds of evidence live in this project, and they must not be
+conflated:**
+
+**A. Clean-fixture benchmark** (below) -- Decision F1 = 1.0, Action F1 =
+0.9615. Measured on `fixtures/meetings/`: synthetic, hand-authored,
+already-punctuated text, uploaded as `.txt` (STT never runs). This measures
+"does the segmentation/extraction logic work correctly on well-formed
+input" -- it does not, and was never claimed to, measure real-world ASR
+performance (see "On WER specifically" below, and `fixtures/meetings/DATASET.md`).
+
+**B. Real ASR audio observations** (`docs/integration.md`'s 2026-09-20 and
+2026-09-22 entries) -- a real, user-provided, genuinely noisy (~20 dB SNR)
+Hindi recording run through the complete real pipeline (`WhisperSTT` →
+`EmbeddingAgendaSegmenter` → `TransformerExtractor`), twice, with a real bug
+found and fixed in between. This measures what actually happens on real
+audio, including a real, ASR-noise-sensitive extraction failure mode found
+in the second run (a single mistranscribed character broke an exact-match
+deadline cue -- see `docs/integration.md`). **A is not evidence for B, and B
+is too small a sample (one file) to be a benchmark for A's kind of claim.**
+Neither should be cited as the other.
+
 ## Reproduce it
 
 ```powershell
@@ -113,17 +134,38 @@ manually-annotated gold set. Two consequences worth being explicit about:
 | Language | Classification (embeddings) | Owner/deadline cues | Evaluated? |
 |---|---|---|---|
 | English | Yes (model covers ~50 languages) | Yes | Yes -- 7/8 fixture scenarios |
-| Hindi | Yes | Yes (Devanagari + romanised) | Partially -- 1/8 fixture scenarios (`02_code_mixed_hindi_english`) |
+| Hindi | Yes | Yes (Devanagari + romanised, both as of 2026-09-22 -- see below) | Partially -- 1/8 fixture scenarios (`02_code_mixed_hindi_english`) on clean fixture text; additionally, one real noisy recording (`docs/integration.md`) exercised the full real pipeline, not just cue-list unit checks |
 | Marathi | Yes (same multilingual model) | No cue patterns yet | **No** -- no fixture, no gold, no measured recall |
 | Bengali | Yes | No cue patterns yet | **No** |
 | Gujarati | Yes | No cue patterns yet | **No** |
+| Awadhi | Yes | Reuses Hindi's cues (see below) | **No** |
 
-`backend/app/ml/multilingual_cues.py` marks Marathi/Bengali/Gujarati
+`backend/app/ml/multilingual_cues.py` marks Marathi/Bengali/Gujarati/Awadhi
 `evaluated=False` in code, not just in this document, specifically so a
 future contributor cannot accidentally report an accuracy number for them
 without first building the fixture and gold data that number would need.
-**No performance claim is made for these three languages anywhere in this
-project.**
+**No performance claim is made for these four languages anywhere in this
+project.** Awadhi's entry is additionally a deliberate reuse of Hindi's cue
+patterns rather than independently-written Awadhi vocabulary -- see
+`multilingual_cues.py`'s `AWADHI` definition and `docs/integration.md`'s
+2026-09-22 entry for why (no verified Awadhi-specific vocabulary was
+available to write against; Awadhi is closely related to Hindi and
+commonly draws on shared Hindi vocabulary in formal/business speech).
+
+### Hindi owner extraction (2026-09-22)
+
+Before this date, `HINDI.owner_patterns` had exactly one pattern, and it was
+Latin-script only (romanised "Rahul ko"/"Priya ne") -- a name spoken and
+transcribed entirely in Devanagari could never be extracted as an owner, at
+all, regardless of how explicitly it was stated. Added one Devanagari-script
+pattern (को/ने-marked, e.g. "पूजा को रिपोर्ट..."), verified against three
+real example sentences plus negative controls (see `docs/integration.md` for
+the full account, including a real `\b`/Unicode-category bug found and fixed
+along the way). A second pattern (subject before a future-tense verb, to
+cover "राहुल ... भेजेगा"-style sentences) was designed, tested, found to
+produce false positives (Hindi's SOV word order and clause-initial discourse
+markers both defeat it), and deliberately not shipped -- documented as a
+known gap rather than a heuristic with unverified precision.
 
 ## MLflow
 
@@ -149,6 +191,46 @@ is not installed, every call becomes a no-op with a log line --
 * No boundary-level segmentation gold, so segmentation is reported
   descriptively (block count, mean confidence) rather than as P/R/F1 against
   a reference segmentation.
+* `action_metrics.py::evaluate_actions` only scores owner/deadline accuracy
+  on matched pairs where the *gold* slot is non-null (`if g.deadline is not
+  None`). A prediction that invents a value where gold says `null` is
+  therefore never counted as wrong by this metric — found in a 2026-09-20
+  re-verification pass, where `multilingual_cues.py` was invented a deadline
+  for "before the cutover" (fixed; see `docs/integration.md`'s 2026-09-20
+  section) with zero effect on the reported F1/accuracy numbers, before or
+  after the fix. Treat reported deadline/owner accuracy as "correct when the
+  gold slot has a value," not as "never invents a value" — the fix above was
+  necessary and is real, but this metric would not have caught it, and
+  would not catch a recurrence.
+* **(2026-09-22)** Real noisy Hindi audio (one file, user-provided, not a
+  fixture) exposed a segmentation bug -- real Whisper output can contain
+  zero sentence-terminating punctuation, which collapsed an entire
+  multi-topic meeting into one agenda block. Fixed
+  (`multilingual_cues.py::split_into_sentences`); see `docs/integration.md`'s
+  2026-09-22 entry for the full before/after, including a *second* real-audio
+  finding this fix does not address: `faster-whisper`'s CPU inference is not
+  perfectly deterministic across runs on identical input, and a single
+  mistranscribed character ("कल" → "खल") silently broke an exact-match
+  deadline cue in one of the two runs. **Cue-based extraction on real,
+  noisy-audio Hindi ASR output is sensitive to ASR transcription noise in a
+  way the clean-fixture benchmark cannot surface**, because fixture text is
+  never actually transcribed.
+* Hindi owner extraction (`multilingual_cues.py::HINDI.owner_patterns`) only
+  covers explicit को/ने-marked constructions. A named subject with the verb
+  elsewhere in the sentence (Hindi's normal SOV order, e.g.
+  "राहुल कल तक रिपोर्ट भेजेगा") is not covered -- two heuristics for it were
+  tried and rejected for producing false positives (see
+  `docs/integration.md`'s 2026-09-22 entry). Owner recall on real Hindi
+  speech is therefore lower than on the को/ने-marked fixture examples it was
+  verified against.
+* `agent/orchestrator.py` does not pass real STT segment timestamps into
+  `segment_agenda` (`agent/tools.py::SegmentAgendaArgs` has no `segments`
+  field), even though `embedding_segmenter.py`/`transformer_extractor.py`
+  now support using them as the highest-priority splitting signal when
+  supplied. This is a small, additive, backward-compatible wiring change
+  that was deliberately not made in the 2026-09-22 session because it
+  requires editing Person B's orchestrator/tool files, and the text-based
+  fallback tiers already fix the diagnosed bug without it.
 
 ## Future work
 
@@ -158,7 +240,14 @@ is not installed, every call becomes a no-op with a log line --
 * Real recordings (with consent) for at least English and Hindi, to measure
   actual WER and to check the fixture-derived cue/threshold calibration
   transfers to real disfluent speech.
-* Fixture scenarios and gold annotations in Marathi, Bengali and Gujarati,
-  before making any accuracy claim for them.
+* Fixture scenarios and gold annotations in Marathi, Bengali, Gujarati and
+  Awadhi, before making any accuracy claim for them.
 * Boundary-level segmentation gold, to exercise `segmentation_metrics.py`
   for real instead of only reporting descriptive statistics.
+* Wire real STT segment timestamps into `agent/orchestrator.py`'s two
+  `segment_agenda` call sites (see the limitation above) -- the ML-side
+  capability already exists and is tested.
+* Fuzzy/edit-distance cue matching (or a fallback to prototype-embedding
+  similarity alone on a near-miss) for Hindi decision/action/deadline cues,
+  to reduce sensitivity to single-character ASR transcription errors on
+  real, noisy audio -- see the 2026-09-22 real-audio finding above.

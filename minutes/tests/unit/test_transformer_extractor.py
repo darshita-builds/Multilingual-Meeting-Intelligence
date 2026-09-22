@@ -170,6 +170,73 @@ def test_owner_and_deadline_are_none_when_not_stated(monkeypatch):
     assert result.actions[0].deadline is None
 
 
+def test_vague_before_phrase_does_not_invent_a_deadline(monkeypatch):
+    """'before the cutover' is a trigger phrase, not a calendar reference --
+    gold_annotations.json marks this exact sentence deadline=None (see
+    docs/ml-evaluation.md's annotation protocol). Regression test for a bug
+    where the deadline regex's `before the \\w+` branch captured "the cutover"
+    itself as the deadline string."""
+    text = "Rahul needs to check the staging database backups before the cutover."
+    _patch(monkeypatch, {text: np.array([0.05, 0.9, 0.05])})
+    extractor = TransformerExtractor()
+
+    result = extractor.extract([_block(text)])
+
+    assert len(result.actions) == 1
+    assert result.actions[0].owner_name == "Rahul"
+    assert result.actions[0].deadline is None
+
+
+def test_hindi_decision_is_extracted_with_verbatim_evidence(monkeypatch):
+    """Real regression case, docs/integration.md 2026-09-22: before the
+    segmentation fix, this kind of sentence was never seen by the extractor
+    on its own -- it was buried inside one giant multi-minute block."""
+    text = "तय हुआ कि अगली मीटिंग सोमवार को होगी"
+    _patch(monkeypatch, {text: np.array([0.92, 0.05, 0.03])})
+    extractor = TransformerExtractor()
+
+    result = extractor.extract([_block(text)])
+
+    assert len(result.decisions) == 1
+    assert result.decisions[0].evidence_quote == text
+    assert result.decisions[0].confidence > 0.5
+    assert result.actions == []
+
+
+def test_real_transcript_shaped_block_scopes_action_to_its_own_clause(monkeypatch):
+    """The exact failure mode this whole fix targets: a block containing
+    several comma-delimited clauses (what a punctuation-free real Hindi
+    transcript looks like after the 2026-09-22 segmentation fix) must not
+    attribute one clause's action to the whole block's text -- the deadline
+    'कल तक' the extractor finds must be evidenced by, and scoped to, the one
+    clause that actually says it."""
+    decision_clause = "तय हुआ कि अगली मीटिंग सोमवार को होगी,"  # trailing comma preserved verbatim
+    action_clause = "पूजा को रिपोर्ट कल तक तैयार करनी है"
+    block_text = f"{decision_clause} {action_clause}"
+
+    _patch(
+        monkeypatch,
+        {
+            decision_clause: np.array([0.9, 0.05, 0.05]),
+            action_clause: np.array([0.05, 0.88, 0.07]),
+        },
+    )
+    extractor = TransformerExtractor()
+
+    result = extractor.extract([_block(block_text)])
+
+    assert len(result.decisions) == 1
+    assert result.decisions[0].evidence_quote == decision_clause
+    assert result.decisions[0].evidence_quote != block_text  # not the whole block
+
+    assert len(result.actions) == 1
+    action = result.actions[0]
+    assert action.evidence_quote == action_clause
+    assert action.evidence_quote != block_text  # the real bug: was the whole transcript
+    assert action.owner_name == "पूजा"
+    assert action.deadline == "कल तक"
+
+
 def test_short_sentences_are_filtered_before_embedding(monkeypatch):
     """All sentences are below min_words, so the embedding call should never
     happen at all -- an empty vector map means the fake encoder would raise
